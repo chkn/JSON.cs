@@ -16,7 +16,7 @@ public static class JSON
 			from p in obj.GetType ().GetProperties ()
 			let json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ()
 			where json != null
-			select string.Format (@"""{0}"":{1}", json.Key ?? p.Name, Stringify (p.GetValue (obj, null)))
+			select "\"" + (json.Key ?? p.Name) + "\":" + Stringify (p.GetValue (obj, null))
 		) + "}";
 	}
 }
