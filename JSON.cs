@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 
 public static class JSON 
 {
@@ -21,16 +20,9 @@ public static class JSON
 	}
 }
 
-public class JSONAttribute : Attribute 
+public class JSONAttribute : Attribute
 {
 	public string Key { get; set; }
-
-	public JSONAttribute ()
-	{
-	}
-	
-	public JSONAttribute (string key)
-	{
-		Key = key;
-	}
+	public JSONAttribute () {}	
+	public JSONAttribute (string key) { Key = key; }
 }
