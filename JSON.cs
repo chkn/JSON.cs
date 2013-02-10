@@ -5,7 +5,7 @@ using System.Text;
 
 public static class JSON {
 
-  public static string Stringify (object obj)
+	public static string Stringify (object obj)
 	{
 		if (obj == null)
 			return "null";
@@ -88,3 +88,5 @@ public class JSONAttribute : Attribute {
 		Key = key;
 	}
 }
+
+
