@@ -168,7 +168,7 @@ public static class JSON {
 					            where (json != null && json.Key == key) || (json == null && p.Name == key)
 					            select p).FirstOrDefault ();
 					if (prop != null) {
-						prop.SetValue (obj, Parse (str, prop.PropertyType));
+						prop.SetValue (obj, Parse (str, prop.PropertyType), null);
 						parsed = true;
 					}
 				}
