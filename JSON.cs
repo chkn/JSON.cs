@@ -165,7 +165,7 @@ public static class JSON {
 					//assume POCO
 					var prop = (from p in hint.GetProperties ()
 					            let json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ()
-					            where (json != null && json.Key == key) || (json == null && p.Name == key)
+					            where p.CanWrite && ((json != null && json.Key == key) || (json == null && p.Name == key))
 					            select p).FirstOrDefault ();
 					if (prop != null) {
 						prop.SetValue (obj, Parse (str, prop.PropertyType), null);
