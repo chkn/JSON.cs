@@ -114,18 +114,21 @@ public static class JSON {
 	}
 	public static object Parse (TextReader str, Type hint)
 	{
-		while (char.IsWhiteSpace ((char)str.Peek ())) str.Read ();
+		str.ConsumeWhitespace ();
 		if (str.Peek () == 'n') return str.Expect ("null", null);
 		if (str.Peek () == 't') return Convert.ChangeType (str.Expect ("true", true), hint);
 		if (str.Peek () == 'f') return Convert.ChangeType (str.Expect ("false", false), hint);
 		if (str.Peek () == '"')	return Convert.ChangeType (str.ReadQuotedString (), hint);
 		if (str.Peek () == '[') {
 			str.Read (); // consume '['
+			str.ConsumeWhitespace ();
+
 			var next = str.Peek ();
 			var items = new List<object> ();
 			var elementType = GetElementType (hint);
 			while (next != ']') {
 				items.Add (Parse (str, elementType));
+				str.ConsumeWhitespace ();
 				next = str.Read ();
 				if (next != ',' && next != ']')
 					throw new JSONException (", or ]");
@@ -149,17 +152,23 @@ public static class JSON {
 		}
 		if (str.Peek () == '{') {
 			str.Read (); // consume '{'
+			str.ConsumeWhitespace ();
+
 			var next = str.Peek ();
-			// FIXME: this fails if you pass in something like IDictionary<string,object>
+			// FIXME: this fails if you pass in an interface like IDictionary<string,object>
 			var obj = Activator.CreateInstance (hint);
 			while (next != '}') {
 				var key = str.ReadQuotedString ();
+				str.ConsumeWhitespace ();
 				if (str.Read () != ':')
 					throw new JSONException (":");
+				str.ConsumeWhitespace ();
+
 				var parsed = false;
 				var dict = obj as IDictionary;
 				if (dict != null) {
 					dict.Add (key, Parse (str, GetElementType (hint)));
+					str.ConsumeWhitespace ();
 					parsed = true;
 				} else if (hint != typeof (object)) {
 					//assume POCO
@@ -175,10 +184,12 @@ public static class JSON {
 				if (!parsed) {
 					// just to consume..
 					Parse (str, typeof (object));
+					str.ConsumeWhitespace ();
 				}
 				next = str.Read ();
 				if (next != ',' && next != '}')
 					throw new JSONException (", or }");
+				str.ConsumeWhitespace ();
 			}
 			return obj;
 		}
@@ -234,10 +245,18 @@ public static class JSON {
 		}
 		return buf.ToString ();
 	}
+	static void ConsumeWhitespace (this TextReader reader)
+	{
+		while (char.IsWhiteSpace ((char)reader.Peek ()))
+			reader.Read ();
+	}
 	static Type GetElementType (Type type)
 	{
 		if (type.IsArray) return type.GetElementType ();
-		if (type.IsGenericType) return type.GetGenericArguments ().Last ();
+		if (type.IsGenericType) {
+			type = type.GetGenericArguments ().Last ();
+		    return type == typeof (object) ? typeof (Dictionary<string,object>) : type;
+		}
 		return typeof (object);
 	}
 }
