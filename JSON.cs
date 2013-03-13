@@ -116,9 +116,9 @@ public static class JSON {
 	{
 		str.ConsumeWhitespace ();
 		if (str.Peek () == 'n') return str.Expect ("null", null);
-		if (str.Peek () == 't') return Convert.ChangeType (str.Expect ("true", true), hint);
-		if (str.Peek () == 'f') return Convert.ChangeType (str.Expect ("false", false), hint);
-		if (str.Peek () == '"')	return Convert.ChangeType (str.ReadQuotedString (), hint);
+		if (str.Peek () == 't') return ConvertIfNeeded (str.Expect ("true", true), hint);
+		if (str.Peek () == 'f') return ConvertIfNeeded (str.Expect ("false", false), hint);
+		if (str.Peek () == '"')	return ConvertIfNeeded (str.ReadQuotedString (), hint);
 		if (str.Peek () == '[') {
 			str.Read (); // consume '['
 			str.ConsumeWhitespace ();
@@ -145,7 +145,7 @@ public static class JSON {
 			if (typeof (IList).IsAssignableFrom (hint) && hint != typeof (IList)) {
 				var list = (IList) Activator.CreateInstance (hint);
 				foreach (var item in items)
-					list.Add (Convert.ChangeType (item, elementType));
+					list.Add (ConvertIfNeeded (item, elementType));
 				return list;
 			}
 			return items;
@@ -195,7 +195,7 @@ public static class JSON {
 		}
 		var number = str.ReadNumber ();
 		if (number != "")
-			return Convert.ChangeType (number, hint);
+			return ConvertIfNeeded (number, hint);
 		throw new JSONException ("valid JSON");
 	}
 	static object Expect (this TextReader reader, string str, object result)
@@ -258,6 +258,10 @@ public static class JSON {
 		    return type == typeof (object) ? typeof (Dictionary<string,object>) : type;
 		}
 		return typeof (object);
+	}
+	static object ConvertIfNeeded (object value, Type hint)
+	{
+		return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
 	}
 }
 
