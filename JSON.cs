@@ -36,6 +36,8 @@ using System.Text.RegularExpressions;
 
 public static class JSON {
 
+	const string DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.fffK";
+
 	public static string Stringify (object obj, bool allProperties = true)
 	{
 		var buf = new StringBuilder ();
@@ -51,7 +53,11 @@ public static class JSON {
 		     if (obj == null) buf.Append ("null");
 		else if (true.Equals (obj)) buf.Append ("true");
 		else if (false.Equals (obj)) buf.Append ("false");
-		else if (obj is ValueType)
+		else if (obj is DateTime) {
+			buf.Append ('"');
+			buf.Append (((DateTime)obj).ToUniversalTime ().ToString (DATETIME_FORMAT));
+			buf.Append ('"');
+		} else if (obj is ValueType)
 			buf.Append (string.Format (CultureInfo.InvariantCulture, "{0}", obj));
 		else if ((str = obj as string) != null) {
 			buf.Append ('"');
@@ -261,7 +267,10 @@ public static class JSON {
 	}
 	static object ConvertIfNeeded (object value, Type hint)
 	{
-		return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
+		if (hint == typeof (DateTime) && value is string)
+			return DateTime.ParseExact (value, DATETIME_FORMAT, CultureInfo.InvariantCulture);
+		else
+			return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
 	}
 }
 
