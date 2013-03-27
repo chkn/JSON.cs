@@ -96,7 +96,7 @@ public static class JSON {
 					buf.Append ('"');
 					buf.Append (json != null ? json.Key ?? p.Name : p.Name);
 					buf.Append ("\":");
-					Stringify (p.GetValue (obj, null), buf);
+					Stringify (ConvertIfNeeded (p.GetValue (obj, null), json != null ? json.Type : null), buf);
 					first = false;
 				}
 			}
@@ -172,13 +172,13 @@ public static class JSON {
 					parsed = true;
 				} else if (hint != typeof (object)) {
 					//assume POCO
-					var prop = (from p in hint.GetProperties ()
-					            let json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ()
-					            where p.CanWrite && ((json != null && json.Key == key) || (json == null && p.Name == key))
-					            select p).FirstOrDefault ();
-					if (prop != null) {
-						prop.SetValue (obj, Parse (str, prop.PropertyType), null);
-						parsed = true;
+					foreach (var p in hint.GetProperties ()) {
+						var json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ();
+						if (p.CanWrite && key == (json != null ? json.Key ?? p.Name : p.Name)) {
+							p.SetValue (obj, Parse (str, p.PropertyType), null);
+							parsed = true;
+							break;
+						}
 					}
 				}
 				if (!parsed) {
@@ -267,7 +267,8 @@ public static class JSON {
 
 public class JSONAttribute : System.Attribute {
 	public string Key { get; set; }
-	public JSONAttribute () {}	
+	public Type Type { get; set; }
+	public JSONAttribute () {}
 	public JSONAttribute (string key) { Key = key; }
 }
 public class JSONException : System.Exception {
