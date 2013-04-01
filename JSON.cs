@@ -267,8 +267,9 @@ public static class JSON {
 	}
 	static object ConvertIfNeeded (object value, Type hint)
 	{
-		if (hint == typeof (DateTime) && value is string)
-			return DateTime.ParseExact (value, DATETIME_FORMAT, CultureInfo.InvariantCulture);
+		string str;
+		if (hint == typeof (DateTime) && (str = value as string) != null)
+			return DateTime.ParseExact (str, DATETIME_FORMAT, CultureInfo.InvariantCulture);
 		else
 			return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
 	}
