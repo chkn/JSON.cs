@@ -26,7 +26,12 @@
 //
 // Preprocessor defines:
 //    ENABLE_DYNAMIC - enable a dynamic overload of JSON.Parse
-//    
+//    NET_45         - define this for Windows Store or PCL Profiles
+//                        without classic reflection...
+#if !NET_45
+using TypeInfo = System.Type;
+#endif
+
 using System;
 using System.IO;
 using System.Text;
@@ -99,8 +104,8 @@ public static class JSON {
 			// assume it's a POCO
 			buf.Append ('{');
 			first = true;
-			foreach (var p in obj.GetType ().GetProperties ()) {
-				var json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ();
+			foreach (var p in obj.GetType ().GetTypeInfo ().GetProperties ()) {
+				var json = p.GetCustomAttribute<JSONAttribute> (true);
 				if (json != null || allProperties) {
 					if (!first)
 						buf.Append (',');
@@ -160,14 +165,11 @@ public static class JSON {
 			}
 			if (hint.IsArray) {
 				var array = Array.CreateInstance (elementType, items.Count);
-				if (elementType.IsClass)
-					items.CopyTo ((object[])array);
-				else
-					for (var i = 0; i < items.Count; i++)
-						array.SetValue (items [i], i);
+				for (var i = 0; i < items.Count; i++)
+					array.SetValue (items [i], i);
 				return array;
 			}
-			if (typeof (IList).IsAssignableFrom (hint) && hint != typeof (IList)) {
+			if (hint != typeof (IList) && typeof (IList).GetTypeInfo ().IsAssignableFrom (hint.GetTypeInfo ())) {
 				var list = (IList) Activator.CreateInstance (hint);
 				foreach (var item in items)
 					list.Add (ConvertIfNeeded (item, elementType));
@@ -196,8 +198,8 @@ public static class JSON {
 					parsed = true;
 				} else if (hint != typeof (object)) {
 					//assume POCO
-					foreach (var p in hint.GetProperties ()) {
-						var json = (JSONAttribute) p.GetCustomAttributes (typeof (JSONAttribute), true).FirstOrDefault ();
+					foreach (var p in hint.GetTypeInfo ().GetProperties ()) {
+						var json = p.GetCustomAttribute<JSONAttribute> (true);
 						if (p.CanWrite && key == (json != null ? json.Key ?? p.Name : p.Name)) {
 							p.SetValue (obj, Parse (str, p.PropertyType), null);
 							parsed = true;
@@ -225,8 +227,7 @@ public static class JSON {
 
 	#endregion
 
-	#region Helpers
-
+	#region Scanner
 	static object Expect (this TextReader reader, string str, object result)
 	{
 		for (var i = 0; i < str.Length; i++) {
@@ -279,10 +280,13 @@ public static class JSON {
 		while (char.IsWhiteSpace ((char)reader.Peek ()))
 			reader.Read ();
 	}
+	#endregion
+
+	#region Helpers
 	static Type GetElementType (Type type)
 	{
 		if (type.IsArray) return type.GetElementType ();
-		if (type.IsGenericType) {
+		if (type.IsGeneric ()) {
 			type = type.GetGenericArguments ().Last ();
 		    return type == typeof (object) ? typeof (Dictionary<string,object>) : type;
 		}
@@ -291,11 +295,43 @@ public static class JSON {
 	static object ConvertIfNeeded (object value, Type hint)
 	{
 		string str;
-		if (hint == typeof (DateTime) && (str = value as string) != null)
+		if (hint == typeof (DateTime) && (str = value as string) != null) {
 			return DateTime.ParseExact (str, DATETIME_FORMAT, CultureInfo.InvariantCulture);
-		else
-			return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
+		} else {
+			try {
+				return hint != null ? Convert.ChangeType (value, hint) : value;
+			} catch (InvalidCastException) {
+				return value;
+			}
+		}
 	}
+	#endregion
+
+	#region Compatibility shims
+	static bool IsGeneric (this Type type)
+	{
+		#if NET_45
+		return type.IsConstructedGenericType;
+		#else
+		return type.IsGenericType;
+		#endif
+	}
+
+	#if NET_45
+	static IEnumerable<PropertyInfo> GetProperties (this TypeInfo typeInfo)
+	{
+		return typeInfo.DeclaredProperties;
+	}
+	static IEnumerable<Type> GetGenericArguments (this Type typeInfo)
+	{
+		return typeInfo.GenericTypeArguments;
+	}
+	#else
+	static TypeInfo GetTypeInfo (this Type type)
+	{
+		return type;
+	}
+	#endif
 	#endregion
 }
 
