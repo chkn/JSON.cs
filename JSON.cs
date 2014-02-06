@@ -23,7 +23,10 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
+//
+// Preprocessor defines:
+//    ENABLE_DYNAMIC - enable a dynamic overload of JSON.Parse
+//    
 using System;
 using System.IO;
 using System.Text;
@@ -38,6 +41,8 @@ public static class JSON {
 
 	const string DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.fffK";
 
+	#region Stringify
+
 	public static string Stringify (object obj, bool allProperties = true)
 	{
 		var buf = new StringBuilder ();
@@ -51,8 +56,8 @@ public static class JSON {
 		IDictionary dict;
 		IEnumerable list;
 		     if (obj == null) buf.Append ("null");
-		else if (true.Equals (obj)) buf.Append ("true");
-		else if (false.Equals (obj)) buf.Append ("false");
+		else if (obj.Equals (true)) buf.Append ("true");
+		else if (obj.Equals (false)) buf.Append ("false");
 		else if (obj is DateTime) {
 			buf.Append ('"');
 			buf.Append (((DateTime)obj).ToUniversalTime ().ToString (DATETIME_FORMAT));
@@ -110,6 +115,20 @@ public static class JSON {
 		}
 	}
 
+	#endregion
+
+	#region Parse
+
+	#if ENABLE_DYNAMIC
+	public static dynamic Parse (string str)
+	{
+		return Parse (new StringReader (str));
+	}
+	public static dynamic Parse (TextReader reader)
+	{
+		return Parse (reader, typeof (object));
+	}
+	#endif
 	public static T Parse<T> (string str)
 	{
 		return (T) Parse (new StringReader (str), typeof (T));
@@ -121,14 +140,14 @@ public static class JSON {
 	public static object Parse (TextReader str, Type hint)
 	{
 		str.ConsumeWhitespace ();
-		if (str.Peek () == 'n') return str.Expect ("null", null);
-		if (str.Peek () == 't') return ConvertIfNeeded (str.Expect ("true", true), hint);
-		if (str.Peek () == 'f') return ConvertIfNeeded (str.Expect ("false", false), hint);
-		if (str.Peek () == '"')	return ConvertIfNeeded (str.ReadQuotedString (), hint);
-		if (str.Peek () == '[') {
+		switch (str.Peek ()) {
+		case 'n': return str.Expect ("null", null);
+		case 't': return ConvertIfNeeded (str.Expect ("true", true), hint);
+		case 'f': return ConvertIfNeeded (str.Expect ("false", false), hint);
+		case '"': return ConvertIfNeeded (str.ReadQuotedString (), hint);
+		case '[': {
 			str.Read (); // consume '['
 			str.ConsumeWhitespace ();
-
 			var next = str.Peek ();
 			var items = new List<object> ();
 			var elementType = GetElementType (hint);
@@ -156,10 +175,9 @@ public static class JSON {
 			}
 			return items;
 		}
-		if (str.Peek () == '{') {
+		case '{': {
 			str.Read (); // consume '{'
 			str.ConsumeWhitespace ();
-
 			var next = str.Peek ();
 			// FIXME: this fails if you pass in an interface like IDictionary<string,object>
 			var obj = Activator.CreateInstance (hint);
@@ -198,12 +216,17 @@ public static class JSON {
 				str.ConsumeWhitespace ();
 			}
 			return obj;
-		}
+		} } // end switch
 		var number = str.ReadNumber ();
 		if (number != "")
 			return ConvertIfNeeded (number, hint);
 		throw new JSONException ("valid JSON");
 	}
+
+	#endregion
+
+	#region Helpers
+
 	static object Expect (this TextReader reader, string str, object result)
 	{
 		for (var i = 0; i < str.Length; i++) {
@@ -273,6 +296,7 @@ public static class JSON {
 		else
 			return hint != null && typeof (IConvertible).IsAssignableFrom (hint) ? Convert.ChangeType (value, hint) : value;
 	}
+	#endregion
 }
 
 public class JSONAttribute : System.Attribute {
