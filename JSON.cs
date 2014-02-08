@@ -61,8 +61,8 @@ public static class JSON {
 		IDictionary dict;
 		IEnumerable list;
 		     if (obj == null) buf.Append ("null");
-		else if (obj.Equals (true)) buf.Append ("true");
-		else if (obj.Equals (false)) buf.Append ("false");
+		else if (true.Equals (obj)) buf.Append ("true");
+		else if (false.Equals (obj)) buf.Append ("false");
 		else if (obj is DateTime) {
 			buf.Append ('"');
 			buf.Append (((DateTime)obj).ToUniversalTime ().ToString (DATETIME_FORMAT));
@@ -71,9 +71,20 @@ public static class JSON {
 			buf.Append (string.Format (CultureInfo.InvariantCulture, "{0}", obj));
 		else if ((str = obj as string) != null) {
 			buf.Append ('"');
-			buf.Append (Regex.Escape (str));
+			foreach (var current in str) {
+				switch (current) {
+				case '\a' : buf.Append ("\\a"); break;
+				case '\b' : buf.Append ("\\b"); break;
+				case '\f' : buf.Append ("\\f"); break;
+				case '\n' : buf.Append ("\\n"); break;
+				case '\r' : buf.Append ("\\r"); break;
+				case '\t' : buf.Append ("\\t"); break;
+				case '\v' : buf.Append ("\\v"); break;
+				case '\\' : buf.Append ("\\\\"); break;
+				default   : buf.Append (current); break;
+				}
+			}
 			buf.Append ('"');
-
 		} else if ((dict = obj as IDictionary) != null) {
 			buf.Append ('{');
 			first = true;
@@ -81,14 +92,12 @@ public static class JSON {
 			while (item.MoveNext ()) {
 				if (!first)
 					buf.Append (',');
-				buf.Append ('"');
-				Stringify (item.Key, buf);
-				buf.Append ("\":");
+				Stringify (item.Key.ToString (), buf);
+				buf.Append (':');
 				Stringify (item.Value, buf);
 				first = false;
 			}
 			buf.Append ('}');
-
 		} else if ((list = obj as IEnumerable) != null) {
 			buf.Append ('[');
 			first = true;
@@ -99,7 +108,6 @@ public static class JSON {
 				first = false;
 			}
 			buf.Append (']');
-
 		} else {
 			// assume it's a POCO
 			buf.Append ('{');
@@ -193,7 +201,7 @@ public static class JSON {
 				var parsed = false;
 				var dict = obj as IDictionary;
 				if (dict != null) {
-					dict.Add (key, Parse (str, GetElementType (hint)));
+					dict.Add (ConvertIfNeeded (key, GetKeyType (hint)), Parse (str, GetElementType (hint)));
 					str.ConsumeWhitespace ();
 					parsed = true;
 				} else if (hint != typeof (object)) {
@@ -283,6 +291,10 @@ public static class JSON {
 	#endregion
 
 	#region Helpers
+	static Type GetKeyType (Type type)
+	{
+		return type.IsGeneric () ? type.GetGenericArguments ().First () : typeof (object);
+	}
 	static Type GetElementType (Type type)
 	{
 		if (type.IsArray) return type.GetElementType ();
