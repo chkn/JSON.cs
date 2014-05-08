@@ -79,6 +79,7 @@ public static class JSON {
 				case '\t' : buf.Append ("\\t"); break;
 				case '\v' : buf.Append ("\\v"); break;
 				case '\\' : buf.Append ("\\\\"); break;
+				case '"'  : buf.Append ("\\\""); break;
 				default   : buf.Append (current); break;
 				}
 			}
