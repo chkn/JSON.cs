@@ -67,9 +67,7 @@ public static class JSON {
 			buf.Append ('"');
 			buf.Append (((DateTime)obj).ToUniversalTime ().ToString (DATETIME_FORMAT));
 			buf.Append ('"');
-		} else if (obj is ValueType)
-			buf.Append (string.Format (CultureInfo.InvariantCulture, "{0}", obj));
-		else if ((str = obj as string) != null) {
+		} else if ((str = obj as string) != null) {
 			buf.Append ('"');
 			foreach (var current in str) {
 				switch (current) {
@@ -85,6 +83,8 @@ public static class JSON {
 				}
 			}
 			buf.Append ('"');
+		} else if (obj is IFormattable) {
+			buf.Append (string.Format (CultureInfo.InvariantCulture, "{0}", obj));
 		} else if ((dict = obj as IDictionary) != null) {
 			buf.Append ('{');
 			first = true;
