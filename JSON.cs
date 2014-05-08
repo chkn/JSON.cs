@@ -202,7 +202,6 @@ public static class JSON {
 				var dict = obj as IDictionary;
 				if (dict != null) {
 					dict.Add (ConvertIfNeeded (key, GetKeyType (hint)), Parse (str, GetElementType (hint)));
-					str.ConsumeWhitespace ();
 					parsed = true;
 				} else if (hint != typeof (object)) {
 					//assume POCO
@@ -218,8 +217,8 @@ public static class JSON {
 				if (!parsed) {
 					// just to consume..
 					Parse (str, typeof (object));
-					str.ConsumeWhitespace ();
 				}
+				str.ConsumeWhitespace ();
 				next = str.Read ();
 				if (next != ',' && next != '}')
 					throw new JSONException (", or }");
