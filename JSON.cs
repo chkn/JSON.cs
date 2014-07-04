@@ -93,9 +93,9 @@ public static class JSON {
 			while (item.MoveNext ()) {
 				if (!first)
 					buf.Append (',');
-				Stringify (item.Key.ToString (), buf);
+				Stringify (item.Key.ToString (), buf, allProperties);
 				buf.Append (':');
-				Stringify (item.Value, buf);
+				Stringify (item.Value, buf, allProperties);
 				first = false;
 			}
 			buf.Append ('}');
@@ -105,7 +105,7 @@ public static class JSON {
 			foreach (var item in list) {
 				if (!first)
 					buf.Append (',');
-				Stringify (item, buf);
+				Stringify (item, buf, allProperties);
 				first = false;
 			}
 			buf.Append (']');
@@ -121,7 +121,7 @@ public static class JSON {
 					buf.Append ('"');
 					buf.Append (json != null ? json.Key ?? p.Name : p.Name);
 					buf.Append ("\":");
-					Stringify (ConvertIfNeeded (p.GetValue (obj, null), json != null ? json.Type : null), buf);
+					Stringify (ConvertIfNeeded (p.GetValue (obj, null), json != null ? json.Type : null), buf, allProperties);
 					first = false;
 				}
 			}
