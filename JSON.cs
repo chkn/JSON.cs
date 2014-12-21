@@ -147,6 +147,10 @@ public static class JSON {
 	{
 		return (T) Parse (new StringReader (str), typeof (T));
 	}
+	public static object Parse (string str, Type hint)
+	{
+		return Parse (new StringReader (str), hint);
+	}
 	public static T Parse<T> (TextReader reader)
 	{
 		return (T) Parse (reader, typeof (T));
