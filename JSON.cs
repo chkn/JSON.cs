@@ -311,14 +311,19 @@ public static class JSON {
 	static object ConvertIfNeeded (object value, Type hint)
 	{
 		string str;
-		if (hint == typeof (DateTime) && (str = value as string) != null) {
+		if (hint == typeof(DateTime) && (str = value as string) != null) {
 			return DateTime.ParseExact (str, DATETIME_FORMAT, CultureInfo.InvariantCulture);
-		} else {
+		}
+		if (hint != null && hint.IsEnum) {
 			try {
-				return hint != null ? Convert.ChangeType (value, hint) : value;
-			} catch (InvalidCastException) {
-				return value;
+				return Enum.ToObject (hint, Convert.ChangeType (value, hint.GetEnumUnderlyingType ()));
+			} catch {
 			}
+		}
+		try {
+			return hint != null ? Convert.ChangeType (value, hint) : value;
+		} catch (InvalidCastException) {
+			return value;
 		}
 	}
 	#endregion
