@@ -314,9 +314,9 @@ public static class JSON {
 		if (hint == typeof(DateTime) && (str = value as string) != null) {
 			return DateTime.ParseExact (str, DATETIME_FORMAT, CultureInfo.InvariantCulture);
 		}
-		if (hint != null && hint.IsEnum) {
+		if (hint != null && hint.GetTypeInfo ().IsEnum) {
 			try {
-				return Enum.ToObject (hint, Convert.ChangeType (value, hint.GetEnumUnderlyingType ()));
+				return Enum.ToObject (hint, Convert.ChangeType (value, Enum.GetUnderlyingType (hint)));
 			} catch {
 			}
 		}
