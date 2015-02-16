@@ -195,7 +195,7 @@ public static class JSON {
 			str.ConsumeWhitespace ();
 			var next = str.Peek ();
 			// FIXME: this fails if you pass in an interface like IDictionary<string,object>
-			var obj = Activator.CreateInstance (hint);
+			var obj = Activator.CreateInstance (hint == typeof (object) ? typeof (Dictionary<string,object>) : hint);
 			while (next != '}') {
 				var key = str.ReadQuotedString ();
 				str.ConsumeWhitespace ();
