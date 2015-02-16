@@ -231,9 +231,10 @@ public static class JSON {
 			}
 			return obj;
 		} } // end switch
-		var number = str.ReadNumber ();
-		if (number != "")
-			return ConvertIfNeeded (number, hint);
+		double number;
+		if (double.TryParse (str.ReadNumber (), NumberStyles.Float, CultureInfo.InvariantCulture, out number)) {
+			return Convert (number, hint);
+		}
 		throw new JSONException ("valid JSON");
 	}
 
