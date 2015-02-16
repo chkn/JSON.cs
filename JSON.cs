@@ -121,7 +121,7 @@ public static class JSON {
 					buf.Append ('"');
 					buf.Append (json != null ? json.Key ?? p.Name : p.Name);
 					buf.Append ("\":");
-					Stringify (ConvertIfNeeded (p.GetValue (obj, null), json != null ? json.Type : null), buf, allProperties);
+					Stringify (Convert (p.GetValue (obj, null), json != null ? json.Type : null), buf, allProperties);
 					first = false;
 				}
 			}
@@ -160,9 +160,9 @@ public static class JSON {
 		str.ConsumeWhitespace ();
 		switch (str.Peek ()) {
 		case 'n': return str.Expect ("null", null);
-		case 't': return ConvertIfNeeded (str.Expect ("true", true), hint);
-		case 'f': return ConvertIfNeeded (str.Expect ("false", false), hint);
-		case '"': return ConvertIfNeeded (str.ReadQuotedString (), hint);
+		case 't': return Convert (str.Expect ("true", true), hint);
+		case 'f': return Convert (str.Expect ("false", false), hint);
+		case '"': return Convert (str.ReadQuotedString (), hint);
 		case '[': {
 			str.Read (); // consume '['
 			str.ConsumeWhitespace ();
@@ -185,7 +185,7 @@ public static class JSON {
 			if (hint != typeof (IList) && typeof (IList).GetTypeInfo ().IsAssignableFrom (hint.GetTypeInfo ())) {
 				var list = (IList) Activator.CreateInstance (hint);
 				foreach (var item in items)
-					list.Add (ConvertIfNeeded (item, elementType));
+					list.Add (Convert (item, elementType));
 				return list;
 			}
 			return items;
@@ -206,7 +206,7 @@ public static class JSON {
 				var parsed = false;
 				var dict = obj as IDictionary;
 				if (dict != null) {
-					dict.Add (ConvertIfNeeded (key, GetKeyType (hint)), Parse (str, GetElementType (hint)));
+					dict.Add (Convert (key, GetKeyType (hint)), Parse (str, GetElementType (hint)));
 					parsed = true;
 				} else if (hint != typeof (object)) {
 					//assume POCO
@@ -308,7 +308,8 @@ public static class JSON {
 		}
 		return typeof (object);
 	}
-	static object ConvertIfNeeded (object value, Type hint)
+
+	public static object Convert (object value, Type hint)
 	{
 		string str;
 		if (hint == typeof(DateTime) && (str = value as string) != null) {
@@ -316,12 +317,12 @@ public static class JSON {
 		}
 		if (hint != null && hint.GetTypeInfo ().IsEnum) {
 			try {
-				return Enum.ToObject (hint, Convert.ChangeType (value, Enum.GetUnderlyingType (hint)));
+				return Enum.ToObject (hint, System.Convert.ChangeType (value, Enum.GetUnderlyingType (hint)));
 			} catch {
 			}
 		}
 		try {
-			return hint != null ? Convert.ChangeType (value, hint) : value;
+			return hint != null ? System.Convert.ChangeType (value, hint) : value;
 		} catch (InvalidCastException) {
 			return value;
 		}
