@@ -231,9 +231,16 @@ public static class JSON {
 			}
 			return obj;
 		} } // end switch
-		double number;
-		if (double.TryParse (str.ReadNumber (), NumberStyles.Float, CultureInfo.InvariantCulture, out number)) {
-			return Convert (number, hint);
+		bool numberIsDecimal;
+		var numberStr = str.ReadNumber (out numberIsDecimal);
+		if (numberIsDecimal) {
+			double number;
+			if (double.TryParse (numberStr, NumberStyles.Float, CultureInfo.InvariantCulture, out number))
+				return Convert (number, hint);
+		} else {
+			long number;
+			if (long.TryParse (numberStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out number))
+				return Convert (number, hint);
 		}
 		throw new JSONException ("valid JSON");
 	}
@@ -277,11 +284,14 @@ public static class JSON {
 		}
 		return buf.ToString ();
 	}
-	static string ReadNumber (this TextReader reader)
+	static string ReadNumber (this TextReader reader, out bool isDecimal)
 	{
+		isDecimal = false;
 		var buf = new StringBuilder ();
 		var current = (char)reader.Peek ();
 		while (current == '-' || current == '.' || current == 'e' || current == 'E' || char.IsDigit (current)) {
+			if (current == '.' || current == 'e' || current == 'E')
+				isDecimal = true;
 			reader.Read ();
 			buf.Append (current);
 			current = (char)reader.Peek ();
