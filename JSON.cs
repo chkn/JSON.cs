@@ -229,6 +229,7 @@ public static class JSON {
 					throw new JSONException (", or }");
 				str.ConsumeWhitespace ();
 			}
+			str.Read (); // consume '}'
 			return obj;
 		} } // end switch
 		bool numberIsDecimal;
