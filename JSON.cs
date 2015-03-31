@@ -169,6 +169,10 @@ public static class JSON {
 			var next = str.Peek ();
 			var items = new List<object> ();
 			var elementType = GetElementType (hint);
+			if (next == ']')
+			{
+				str.Read();
+			}
 			while (next != ']') {
 				items.Add (Parse (str, elementType));
 				str.ConsumeWhitespace ();
@@ -194,6 +198,10 @@ public static class JSON {
 			str.Read (); // consume '{'
 			str.ConsumeWhitespace ();
 			var next = str.Peek ();
+			if (next == '}')
+			{
+				str.Read();
+			}
 			// FIXME: this fails if you pass in an interface like IDictionary<string,object>
 			var obj = Activator.CreateInstance (hint == typeof (object) ? typeof (Dictionary<string,object>) : hint);
 			while (next != '}') {
